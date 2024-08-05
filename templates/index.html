@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to CSV Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header-image {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .introduction {
+            margin-bottom: 30px;
+        }
+        #upload-form {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        #file-input {
+            margin-bottom: 10px;
+        }
+        #selected-file-name {
+            font-style: italic;
+            margin-left: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #output-options {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <img src="/static/Splash%20screen.png" alt="Header Image" class="header-image">
+
+    
+
+    <div class="introduction">
+        <h2>Welcome to our JSON to CSV Converter</h2>
+        <p>This tool allows you to easily convert JSON files to CSV format. Simply upload your JSON file or a ZIP containing multiple JSON files, select your output option, and proceed to column selection.</p>
+    </div>
+
+    <form id="upload-form" action="/select_columns" method="post" enctype="multipart/form-data">
+        <h2>Upload File and Select Output Option</h2>
+        <input type="file" name="file" id="file-input" accept=".json,.zip" required>
+        <span id="selected-file-name"></span>
+
+        <div id="output-options">
+            <h3>Select Output Option:</h3>
+            <div>
+                <input type="radio" id="all-trials" name="output-option" value="all_trials" required>
+                <label for="all-trials">Detailed Measures</label>
+            </div>
+            <div>
+                <input type="radio" id="average-trials" name="output-option" value="average">
+                <label for="average-trials">Quick Summary of Measures</label>
+            </div>
+        </div>
+
+        <button type="submit" onclick="submitForm()">Proceed to Column Selection</button>
+    </form>
+
+    <script>
+    document.getElementById('file-input').addEventListener('change', function() {
+        document.getElementById('selected-file-name').textContent = this.files[0] ? this.files[0].name : '';
+    });
+
+    function submitForm() {
+        const form = document.getElementById('upload-form');
+        const outputOption = document.querySelector('input[name="output-option"]:checked').value;
+        form.action = `/select_columns?output-option=${outputOption}`;
+        form.submit();
+    }
+    </script>
+</body>
+</html>
