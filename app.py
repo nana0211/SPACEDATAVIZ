@@ -4,8 +4,8 @@ import numpy as np
 import zipfile
 from flask import Flask, request, send_file, render_template, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
-from finalJSONtoCSV import get_column_groups_full_with_average,JSONtoCSV_with_average,get_summary_columns
-from getTrialNumbers import findAllTrials, findAllTrials_df
+from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns
+from getTrialNumbers import findAllTrials
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -80,12 +80,12 @@ def get_columns():
             json_files = [file_path]
 
         num_pi, num_pj, num_pot, num_pet = findAllTrials(json_files[0])
-        df = JSONtoCSV_with_average(json_files, os.path.basename(file_path), num_pi, num_pj, num_pot, num_pet)
+        df = JSONtoCSV(json_files, os.path.basename(file_path), num_pi, num_pj, num_pot, num_pet)
 
         if output_option == 'average':
             column_groups = get_summary_columns()
         else:
-            column_groups = get_column_groups_full_with_average(df, num_pi, num_pj, num_pot, num_pet)
+            column_groups = get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
             print("We get a full columns~~~~~~~")
         
         def process_group(group):
@@ -191,12 +191,12 @@ def upload_file():
         app.logger.info(f"Selected columns: {selected_columns}")
 
         num_pi, num_pj, num_pot, num_pet = findAllTrials(json_files[0])
-        df = JSONtoCSV_with_average(json_files, os.path.basename(file_path), num_pi, num_pj, num_pot, num_pet)
+        df = JSONtoCSV(json_files, os.path.basename(file_path), num_pi, num_pj, num_pot, num_pet)
 
         app.logger.info(f"DataFrame shape: {df.shape}")
         app.logger.info(f"DataFrame columns: {df.columns.tolist()}")
 
-        column_groups_all_trials = get_column_groups_full_with_average(df, num_pi, num_pj, num_pot, num_pet)
+        column_groups_all_trials = get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
         column_groups_average = get_summary_columns()
 
         expanded_columns = expand_selected_columns(selected_columns, column_groups_all_trials, column_groups_average, df, output_option)
@@ -233,4 +233,4 @@ def download_file(filename):
     return send_file(os.path.join(app.config['DOWNLOAD_FOLDER'], filename), as_attachment=True)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=6069, debug=True)
+    app.run(host='0.0.0.0', port=7089, debug=True)
