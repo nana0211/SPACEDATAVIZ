@@ -6,7 +6,6 @@ from flask import Flask, request, send_file, render_template, jsonify, send_from
 from werkzeug.utils import secure_filename
 from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns
 from getTrialNumbers import findAllTrials
-import timeout
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
