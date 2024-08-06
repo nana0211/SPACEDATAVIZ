@@ -50,16 +50,21 @@
         #output-options {
             margin-top: 20px;
         }
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <img src="/static/Splash%20screen.png" alt="Header Image" class="header-image">
 
-    
+    <h1>JSON to CSV Converter</h1>
 
     <div class="introduction">
         <h2>Welcome to our JSON to CSV Converter</h2>
         <p>This tool allows you to easily convert JSON files to CSV format. Simply upload your JSON file or a ZIP containing multiple JSON files, select your output option, and proceed to column selection.</p>
+        <p class="highlight">Note: JSON file names must not start with invalid characters like '.' or '_'. It's recommended to start with numbers or letters.</p>
     </div>
 
     <form id="upload-form" action="/select_columns" method="post" enctype="multipart/form-data">
@@ -71,11 +76,11 @@
             <h3>Select Output Option:</h3>
             <div>
                 <input type="radio" id="all-trials" name="output-option" value="all_trials" required>
-                <label for="all-trials">Detailed Measures</label>
+                <label for="all-trials">All Trials</label>
             </div>
             <div>
                 <input type="radio" id="average-trials" name="output-option" value="average">
-                <label for="average-trials">Quick Summary of Measures</label>
+                <label for="average-trials">Average of All Trials</label>
             </div>
         </div>
 
