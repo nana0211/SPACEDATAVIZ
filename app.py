@@ -85,6 +85,23 @@ def get_columns():
         else:
             column_groups = get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
 
+        def clean_column_groups(group, df):
+            if isinstance(group, dict):
+                cleaned = {}
+                for k, v in group.items():
+                    cleaned_v = clean_column_groups(v, df)
+                    if cleaned_v:
+                        cleaned[k] = cleaned_v
+                return cleaned
+            elif isinstance(group, list):
+                return [item for item in group if item in df.columns and not df[item].isna().all() and not (df[item] == '').all()]
+            elif isinstance(group, str):
+                return group if group in df.columns and not df[group].isna().all() and not (df[group] == '').all() else None
+            return group
+
+        # Clean the column groups based on the actual DataFrame content
+        cleaned_column_groups = clean_column_groups(column_groups, df)
+
         def process_group(group):
             if isinstance(group, dict):
                 processed = {}
@@ -97,10 +114,10 @@ def get_columns():
                         processed[k] = process_group(v)
                 return processed
             elif isinstance(group, list):
-                return sorted(group)
+                return group
             return group
 
-        top_level_groups = {k: process_group(v) for k, v in column_groups.items()}
+        top_level_groups = {k: process_group(v) for k, v in cleaned_column_groups.items()}
 
         app.logger.info(f"Processed column groups: {top_level_groups}")
         return jsonify(top_level_groups)
@@ -110,7 +127,7 @@ def get_columns():
         import traceback
         app.logger.error(traceback.format_exc())
         return jsonify({'error': 'An error occurred while fetching columns. Please try again.'}), 500
-    
+        
       
 def expand_selected_columns(selected_columns, column_groups_all_trials, column_groups_average, df, output_option):
     expanded_columns = []
