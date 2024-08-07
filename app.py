@@ -61,12 +61,10 @@ def get_columns():
     try:
         if request.method != 'POST':
             return jsonify({'error': 'Invalid request method'}), 405
-
         if request.content_type != 'application/json':
             return jsonify({'error': 'Invalid content type, expected application/json'}), 415
 
         output_option = request.json.get('output_option', 'all_trials')
-
         file_path = session.get('file_path')
         if not file_path:
             return jsonify({'error': 'No file uploaded'}), 400
@@ -86,46 +84,55 @@ def get_columns():
             column_groups = get_summary_columns()
         else:
             column_groups = get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
-            print("We get a full columns~~~~~~~")
-        
+
         def process_group(group):
             if isinstance(group, dict):
-                return {k: list(v.keys()) if isinstance(v, dict) else v for k, v in group.items()}
+                processed = {}
+                for k, v in group.items():
+                    if k == "PI (for each trial)":
+                        # Sort PI trials numerically
+                        sorted_trials = sorted(v.keys(), key=lambda x: int(x.split('_')[-1]) if x.startswith('PI_trial_') else float('inf'))
+                        processed[k] = {trial: v[trial] for trial in sorted_trials}
+                    else:
+                        processed[k] = process_group(v)
+                return processed
+            elif isinstance(group, list):
+                return sorted(group)
             return group
 
         top_level_groups = {k: process_group(v) for k, v in column_groups.items()}
+
+        app.logger.info(f"Processed column groups: {top_level_groups}")
         return jsonify(top_level_groups)
-    
+
     except Exception as e:
         app.logger.error(f'Error in get_columns: {str(e)}')
         import traceback
         app.logger.error(traceback.format_exc())
         return jsonify({'error': 'An error occurred while fetching columns. Please try again.'}), 500
+    
       
 def expand_selected_columns(selected_columns, column_groups_all_trials, column_groups_average, df, output_option):
     expanded_columns = []
-
     if not selected_columns:
         return expanded_columns
-
-    def add_columns(columns_to_add):
-        if isinstance(columns_to_add, list):
-            expanded_columns.extend(columns_to_add)
-        else:
-            expanded_columns.append(columns_to_add)
 
     def process_column_path(col_path, groups_dict):
         parts = col_path.split('.')
         current_dict = groups_dict
         for part in parts:
             if isinstance(current_dict, list):
-                # If current_dict is a list, return it as we can't index it further
                 return current_dict
             if part in current_dict:
                 current_dict = current_dict[part]
             else:
                 return None
         return current_dict
+
+    def expand_pi_trial(trial_num, df_columns):
+        pi_columns = [c for c in df_columns if c.startswith(f'PI_') and c.split('_')[2] == trial_num]
+        order = ['TotalTime', 'Distance', 'DistRatio', 'FinalAngle', 'Angle', 'Corrected_PI_Angle']
+        return sorted(pi_columns, key=lambda x: order.index(x.split('_')[1]) if x.split('_')[1] in order else len(order))
 
     if output_option == 'all_trials':
         for col in selected_columns:
@@ -141,14 +148,13 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
                         expanded_columns.append(col_dict)
                 elif col.startswith('PI_trial_'):
                     trial_num = col.split('_')[-1]
-                    expanded_columns.extend([c for c in df.columns if c.startswith(f'PI_') and c.split('_')[2] == trial_num])
-                    expanded_columns.append(f'Corrected_PI_Angle_{trial_num}')
+                    expanded_columns.extend(expand_pi_trial(trial_num, df.columns))
                 elif col.startswith('Pointing_trial_'):
                     trial_num = col.split('_')[-1]
-                    expanded_columns.extend([c for c in df.columns if c.startswith(f'PointingJudgement_AbsoluteError_{trial_num}_')])
+                    expanded_columns.extend(sorted([c for c in df.columns if c.startswith(f'PointingJudgement_AbsoluteError_{trial_num}_')]))
                 elif col.startswith('Perspective_trial_'):
                     trial_num = col.split('_')[-1]
-                    expanded_columns.extend([c for c in df.columns if c.startswith(f'Perspective') and f'_{trial_num}' in c])
+                    expanded_columns.extend(sorted([c for c in df.columns if c.startswith(f'Perspective') and f'_{trial_num}' in c]))
 
     elif output_option == 'average':
         for col in selected_columns:
@@ -162,6 +168,8 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
                         expanded_columns.extend(col_dict)
                     else:
                         expanded_columns.append(col_dict)
+        
+        # For 'average' option, we don't need to sort the columns as they should already be in the correct order
 
     return expanded_columns
 

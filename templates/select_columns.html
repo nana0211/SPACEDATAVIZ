@@ -170,19 +170,34 @@
             ];
 
             orderedGroups.forEach(group => {
-                if (columns[group]) {
-                    const groupColumns = columns[group];
-                    const groupDiv = document.createElement('div');
-                    groupDiv.className = 'column-group';
-        
-                    groupDiv.innerHTML = `<h3>${group}</h3><p class="description">${groupDescriptions[group] || ''}</p>`;
-        
+            if (columns[group]) {
+                const groupColumns = columns[group];
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'column-group';
+
+                groupDiv.innerHTML = `<h3>${group}</h3><p class="description">${groupDescriptions[group] || ''}</p>`;
+
+                if (group === 'PI (for each trial)' || group === 'Perspective taking') {
+                    // Special handling for PI trials to ensure correct order
+                    const sortedKeys = Object.keys(groupColumns).sort((a, b) => {
+                        if (a === 'PI_averages') return -1;
+                        if (b === 'PI_averages') return 1;
+                        const aNum = parseInt(a.split('_').pop());
+                        const bNum = parseInt(b.split('_').pop());
+                        return aNum - bNum;
+                    });
+
+                    sortedKeys.forEach(key => {
+                        processColumns({[key]: groupColumns[key]}, groupDiv, 0, group);
+                    });
+                } else {
                     processColumns(groupColumns, groupDiv, 0, group);
-        
-                    columnList.appendChild(groupDiv);
                 }
-            });
+
+                columnList.appendChild(groupDiv);
         }
+    });
+}
 
         function processColumns(columns, parentDiv, depth = 0, path = '') {
             if (Array.isArray(columns)) {
