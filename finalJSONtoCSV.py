@@ -422,3 +422,17 @@ def get_summary_columns():
         ]
         }
     return column_groups
+
+def clean_column_groups(group, df):
+            if isinstance(group, dict):
+                cleaned = {}
+                for k, v in group.items():
+                    cleaned_v = clean_column_groups(v, df)
+                    if cleaned_v:
+                        cleaned[k] = cleaned_v
+                return cleaned
+            elif isinstance(group, list):
+                return [item for item in group if item in df.columns and not df[item].isna().all() and not (df[item] == '').all()]
+            elif isinstance(group, str):
+                return group if group in df.columns and not df[group].isna().all() and not (df[group] == '').all() else None
+            return group

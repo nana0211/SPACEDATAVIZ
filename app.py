@@ -4,7 +4,7 @@ import numpy as np
 import zipfile
 from flask import Flask, request, send_file, render_template, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
-from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns,calculate_pi_averages
+from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns,calculate_pi_averages,clean_column_groups
 from getTrialNumbers import findAllTrials
 
 app = Flask(__name__)
@@ -84,21 +84,7 @@ def get_columns():
             column_groups = get_summary_columns()
         else:
             column_groups = get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
-
-        def clean_column_groups(group, df):
-            if isinstance(group, dict):
-                cleaned = {}
-                for k, v in group.items():
-                    cleaned_v = clean_column_groups(v, df)
-                    if cleaned_v:
-                        cleaned[k] = cleaned_v
-                return cleaned
-            elif isinstance(group, list):
-                return [item for item in group if item in df.columns and not df[item].isna().all() and not (df[item] == '').all()]
-            elif isinstance(group, str):
-                return group if group in df.columns and not df[group].isna().all() and not (df[group] == '').all() else None
-            return group
-
+            
         # Clean the column groups based on the actual DataFrame content
         cleaned_column_groups = clean_column_groups(column_groups, df)
 
@@ -223,15 +209,17 @@ def upload_file():
 
         column_groups_all_trials= get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
         column_groups_average = get_summary_columns()
-
+            # Clean the column groups based on the actual DataFrame content
+        cleaned_column_groups_all_trials = clean_column_groups(column_groups_all_trials, df)
+        cleaned_column_groups_averages =  clean_column_groups(column_groups_average, df)
         pi_averages = calculate_pi_averages(df,selected_columns)
         for avg_name, avg_values in pi_averages.items():
             df[avg_name] = avg_values
-
+      
         app.logger.info(f"DataFrame shape: {df.shape}")
         app. logger.info(f"DataFrame columns: {df.columns.tolist()}")
 
-        expanded_columns = expand_selected_columns(selected_columns, column_groups_all_trials, column_groups_average, df, output_option)
+        expanded_columns = expand_selected_columns(selected_columns, cleaned_column_groups_all_trials, cleaned_column_groups_averages, df, output_option)
 
         app.logger.info(f"Expanded columns: {expanded_columns}")
         existing_columns = list(dict.fromkeys([col for col in expanded_columns if col in df.columns]))
