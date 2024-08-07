@@ -38,7 +38,7 @@ def process_single_json(file_path):
 
 def process_zip_file(file_path):
     with zipfile.ZipFile(file_path, 'r') as zip_ref:
-        flat_data = process_single_json(zip_ref.namelist()[0])
+        data = process_single_json(zip_ref.namelist()[0])
     flat_data = flatten_json(data)
     return pd.DataFrame([flat_data])
 # Flatten the JSON data, excluding RawData
@@ -119,5 +119,19 @@ def findEstimatedLandmarks(path_file):
     csv_headers = df.columns
     result = [re.search(PATTERN_LANDMARK, string).group(1) for string in csv_headers if re.search(PATTERN_LANDMARK, string)]
     return result
+
+def count_pointing_judgements(df):
+    csv_header = df.columns
+    judgements_per_task = {}
+
+    for col in csv_header:
+        match = re.match(PATTERN_POINTING_JUDGEMENT, col)
+        if match:
+            task_num, judgement_num = map(int, match.groups())
+            if task_num not in judgements_per_task:
+                judgements_per_task[task_num] = set()
+            judgements_per_task[task_num].add(judgement_num)
+
+    return {task: len(judgements) for task, judgements in judgements_per_task.items()}
     
     

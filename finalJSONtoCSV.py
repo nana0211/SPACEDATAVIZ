@@ -51,6 +51,27 @@ class DataExtractor:
                 map_data.extend([xy_data[landmark].get("X", ""), xy_data[landmark].get("Y", "")])
         
         return map_data
+    @staticmethod
+    def get_pointing_judgement_data(data):
+        pointing_data = DataExtractor.get_value(data, "Sessions", "Egocentric", 0, "PointingTasks")
+        if not pointing_data:
+            return {}, 0
+        
+        task_data = {}
+        all_errors = []
+        for task in pointing_data:
+            task_num = task.get("TaskNumber", len(task_data))
+            judgements = task.get("PointingJudgements", [])
+            errors = [j.get("Absolute_Error", 0) for j in judgements if "Absolute_Error" in j]
+            if errors:
+                task_data[task_num] = {
+                    "errors": errors,
+                    "average_error": sum(errors) / len(errors)
+                }
+                all_errors.extend(errors)
+        
+        overall_average = sum(all_errors) / len(all_errors) if all_errors else 0
+        return task_data, overall_average
 
 class JSONProcessor:
     def __init__(self, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials):
@@ -131,7 +152,10 @@ class JSONProcessor:
                         pointing_errors[i].append(float(error))
                 else:
                     output.append("")
-
+         # Add overall average
+         # Pointing Judgements data
+        pointing_data, overall_average = extractor.get_pointing_judgement_data(data)
+        output.append(overall_average)
         # Remaining data
         output.extend([
             self.calculate_pointing_judgement_total_time(data),
@@ -215,7 +239,8 @@ def get_column_headers(total_pi_trials, total_pointing_judgements, total_pointin
     for i in range(total_pointing_tasks):
         for j in range(total_pointing_judgements):
             headers.append(f"PointingJudgement_AbsoluteError_{i}_Trial_{j}")
-
+            
+    headers.append("Average_PointingJudgementError_all")
     headers.extend([
         "PointingJudgementTotalTime", "MapTotalTime", "CalculatedMapTotalTimeSeconds", "MapRSq",
         "MemoryTotalTime", "CalculatedMemoryTotalTimeSeconds", "MemoryPercentCorrect",
