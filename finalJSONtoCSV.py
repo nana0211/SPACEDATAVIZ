@@ -330,7 +330,29 @@ def calculate_pointing_averages(df, select_columns,total_num_pointing_trials):
         overall_average = np.nan # Return an empty series if no trials are selected
 
     return unselected_pointing_trials, overall_average
-
+def calculate_pet_averages(df, select_columns, selected_trials=None):
+    def get_perspective_error__indices(input_list):
+            perspective_trials = []
+            for item in input_list:
+                if 'Perspective taking.Perspective_trial_' in item:
+                    # Extract trial index and ensure it's not including further subcolumns
+                    trial_part = item.split('Perspective taking.Perspective_trial_')[-1]
+                    if '.' not in trial_part:
+                        perspective_trials.append(int(trial_part))  # Convert to integer for proper sorting
+            return sorted(perspective_trials)
+    selected_trials = get_perspective_error__indices(select_columns)
+    logger.info(f"Selected_trials_PET: {selected_trials}")  
+    if selected_trials:
+        columns = [f"PerspectiveErrorMeasure_{i}" for i in selected_trials]
+    else:
+        columns = [col for col in df.columns if col.startswith(f"PerspectiveErrorMeasure_")]
+        
+    if columns:
+        df["Avg_PerspectiveErrorMeasure"] = df[columns].mean(axis=1)
+    
+    
+    
+    
 def JSONtoCSV(json_files, csv_filename, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials):
     logger.info(f"Processing {len(json_files)} JSON files")
     

@@ -4,7 +4,7 @@ import numpy as np
 import zipfile
 from flask import Flask, request, send_file, render_template, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
-from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns,calculate_pi_averages,clean_column_groups,calculate_pointing_averages
+from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns,calculate_pi_averages,clean_column_groups,calculate_pointing_averages,calculate_pet_averages
 from getTrialNumbers import findAllTrials
 
 app = Flask(__name__)
@@ -218,6 +218,7 @@ def upload_file():
             df[avg_name] = avg_values
         
         unselected_pot,po_averages_all = calculate_pointing_averages(df,selected_columns,num_pot)
+        calculate_pet_averages(df,selected_columns)
         
         if po_averages_all != np.nan:
            df['Average_PointingJudgementError_all'] = po_averages_all
