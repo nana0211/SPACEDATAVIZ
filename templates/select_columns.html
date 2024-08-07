@@ -205,7 +205,15 @@
                         subgroupDiv.innerHTML = `<h${Math.min(depth + 4, 6)}>${subgroup}</h${Math.min(depth + 4, 6)}>`;
                         processColumns(subcolumns, subgroupDiv, depth + 1, newPath);
                         parentDiv.appendChild(subgroupDiv);
-                    } else {
+                    }
+                    else if (path === 'Pointing error' && subgroup === 'Pointing_error_averages') {
+                        const subgroupDiv = document.createElement('div');
+                        subgroupDiv.style.marginLeft = `${depth * 20}px`;
+                        subgroupDiv.innerHTML = `<h${Math.min(depth + 4, 6)}>${subgroup}</h${Math.min(depth + 4, 6)}>`;
+                        processColumns(subcolumns, subgroupDiv, depth + 1, newPath);
+                        parentDiv.appendChild(subgroupDiv);
+                    }
+                    else {
                         parentDiv.innerHTML += `
                             <div style="margin-left: ${depth * 20}px;">
                                 <input type="checkbox" id="${newPath}" name="columns" value="${newPath}" checked>

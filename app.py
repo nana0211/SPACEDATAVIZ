@@ -4,7 +4,7 @@ import numpy as np
 import zipfile
 from flask import Flask, request, send_file, render_template, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
-from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns
+from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns,calculate_pi_averages
 from getTrialNumbers import findAllTrials
 
 app = Flask(__name__)
@@ -196,8 +196,15 @@ def upload_file():
         app.logger.info(f"DataFrame shape: {df.shape}")
         app.logger.info(f"DataFrame columns: {df.columns.tolist()}")
 
-        column_groups_all_trials = get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
+        column_groups_all_trials= get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
         column_groups_average = get_summary_columns()
+
+        pi_averages = calculate_pi_averages(df,selected_columns)
+        for avg_name, avg_values in pi_averages.items():
+            df[avg_name] = avg_values
+
+        app.logger.info(f"DataFrame shape: {df.shape}")
+        app. logger.info(f"DataFrame columns: {df.columns.tolist()}")
 
         expanded_columns = expand_selected_columns(selected_columns, column_groups_all_trials, column_groups_average, df, output_option)
 

@@ -98,26 +98,37 @@ class JSONProcessor:
 
         # Path Integration data
         pi_data = extractor.get_value(data, "Sessions", "PathIntegration", 0, "Trials")
+        pi_totals, pi_distances, pi_dist_ratios, pi_final_angles, pi_corrected_angles = [], [], [], [], []
         for i in range(self.total_pi_trials):
             if i < len(pi_data):
                 trial_data = pi_data[i]["Data"]
-                output.extend([
+                trial_values = [
                     trial_data.get("totalTime", ""),
                     trial_data.get("PIDistance", ""),
                     trial_data.get("PIDistanceRatio", ""),
                     trial_data.get("FinalPIAngle", ""),
                     trial_data.get("PIAngle", ""),
                     trial_data.get("CorrectedPIAngle", "")
-                ])
+                ]
+                output.extend(trial_values)
+                pi_totals.append(trial_values[0])
+                pi_distances.append(trial_values[1])
+                pi_dist_ratios.append(trial_values[2])
+                pi_final_angles.append(trial_values[3])
+                pi_corrected_angles.append(trial_values[5])
             else:
                 output.extend([""] * 6)
 
         # Pointing Judgements data
         pointing_data = extractor.get_value(data, "Sessions", "Egocentric", 0, "PointingTasks")
+        pointing_errors = [[] for _ in range(self.total_pointing_tasks)]
         for i in range(self.total_pointing_tasks):
             for j in range(self.total_pointing_judgements):
                 if i < len(pointing_data) and j < len(pointing_data[i]["PointingJudgements"]):
-                    output.append(pointing_data[i]["PointingJudgements"][j].get("Absolute_Error", ""))
+                    error = pointing_data[i]["PointingJudgements"][j].get("Absolute_Error", "")
+                    output.append(error)
+                    if error != "":
+                        pointing_errors[i].append(float(error))
                 else:
                     output.append("")
 
@@ -143,19 +154,37 @@ class JSONProcessor:
 
         # Perspective Taking data
         pt_data = extractor.get_value(data, "Sessions", "PerspectiveTaking", 0, "Trials")
+        perspective_errors = []
         for i in range(self.total_pt_trials):
             if i < len(pt_data):
                 trial_data = pt_data[i]
-                output.extend([
+                trial_values = [
                     trial_data.get("TotalTime", ""),
                     trial_data.get("TotalIdleTime", ""),
                     trial_data.get("FinalAngle", ""),
                     trial_data.get("CorrectAngle", ""),
                     trial_data.get("DifferenceAngle", ""),
                     trial_data.get("ErrorMeasure", "")
-                ])
+                ]
+                output.extend(trial_values)
+                if trial_values[5] != "":
+                    perspective_errors.append(float(trial_values[5]))
             else:
                 output.extend([""] * 6)
+
+        # Calculate and append averages
+        output.extend([
+            sum(float(t) for t in pi_totals if t) / len(pi_totals) if pi_totals else "",
+            sum(float(d) for d in pi_distances if d) / len(pi_distances) if pi_distances else "",
+            sum(float(r) for r in pi_dist_ratios if r) / len(pi_dist_ratios) if pi_dist_ratios else "",
+            sum(float(a) for a in pi_final_angles if a) / len(pi_final_angles) if pi_final_angles else "",
+            sum(float(a) for a in pi_corrected_angles if a) / len(pi_corrected_angles) if pi_corrected_angles else ""
+        ])
+        
+        for errors in pointing_errors:
+            output.append(sum(errors) / len(errors) if errors else "")
+        
+        output.append(sum(perspective_errors) / len(perspective_errors) if perspective_errors else "")
 
         return output
 
@@ -181,7 +210,7 @@ def get_column_headers(total_pi_trials, total_pointing_judgements, total_pointin
 
     for i in range(total_pi_trials):
         headers.extend([f"PI_TotalTime_{i}", f"PI_Distance_{i}", f"PI_DistRatio_{i}",
-                        f"PI_FinalAngle_{i}", f"PI_Angle_{i}", f"Corrected_PI_Angle_{i}"])
+                        f"PI_FinalAngle_{i}", f"PI_Angle_{i}", f"PI_Corrected_PI_Angle_{i}"])
 
     for i in range(total_pointing_tasks):
         for j in range(total_pointing_judgements):
@@ -204,7 +233,37 @@ def get_column_headers(total_pi_trials, total_pointing_judgements, total_pointin
                         f"PerpectiveFinalAngle_{i}", f"PerpectiveCorrectAngle_{i}",
                         f"PerpectiveDifferenceAngle_{i}", f"PerspectiveErrorMeasure_{i}"])
 
+     # Add headers for average columns
+    headers.extend(["Avg_PI_TotalTime", "Avg_PI_Distance", "Avg_PI_DistRatio", "Avg_PI_FinalAngle", "Avg_PI_Corrected_PI_Angle"])
+    headers.extend([f"Avg_PointingJudgement_AbsoluteError_{i}" for i in range(total_pointing_tasks)])
+    headers.append("Avg_PerspectiveErrorMeasure")
+
     return headers
+
+def calculate_pi_averages(df, select_columns, selected_trials=None):
+    def get_pi_trial_indices(input_list):
+        pi_trials = []
+        for item in input_list:
+            if 'PI (for each trial).PI_trial_' in item:
+                trial_index = item.split('PI_trial_')[-1]
+                pi_trials.append(int(trial_index))  # Convert to integer for proper sorting
+        return sorted(pi_trials)
+    
+    pi_metrics = ["TotalTime", "Distance", "DistRatio", "FinalAngle", "Corrected_PI_Angle"]
+    averages = {}
+    selected_trials = get_pi_trial_indices(select_columns)
+    logger.info(f"Selected_trials_PI: {selected_trials}")
+                
+    for metric in pi_metrics:
+        if selected_trials:
+            columns = [f"PI_{metric}_{i}" for i in selected_trials]
+        else:
+            columns = [col for col in df.columns if col.startswith(f"PI_{metric}_")]
+        
+        if columns:
+            averages[f"Avg_PI_{metric}"] = df[columns].mean(axis=1)
+    
+    return averages
 
 def JSONtoCSV(json_files, csv_filename, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials):
     logger.info(f"Processing {len(json_files)} JSON files")
@@ -221,7 +280,7 @@ def JSONtoCSV(json_files, csv_filename, total_pi_trials, total_pointing_judgemen
     
     return df
 
-def get_column_groups(df, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials):
+def get_column_groups(df, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials,selected_pi_trials=None):
     def findEstimatedLandmarks(df):
         landmarks = ['Nest_X', 'Nest_Y', 'Cave_X', 'Cave_Y', 'Arch_X', 'Arch_Y', 
                      'Tree_X', 'Tree_Y', 'Volcano_X', 'Volcano_Y', 'Waterfall_X', 'Waterfall_Y']
@@ -241,17 +300,18 @@ def get_column_groups(df, total_pi_trials, total_pointing_judgements, total_poin
                 "PI Distance": ["Avg_PI_Distance"],
                 "PI DistanceRatio":["Avg_PI_DistRatio"],
                 "PI FinalAngle": ["Avg_PI_FinalAngle"],
-                "Corrected PI Angle": ["Avg_Corrected_PI_Angle"]
+                "Corrected PI Angle": ["Avg_PI_Corrected_PI_Angle"]
             }
         },
         "Pointing error": {
-            "Error (every trial)": [
-                f"Avg_PointingJudgement_AbsoluteError_{i}" for i in range(total_pi_trials)
-            ],
-            "Pointing_Error_Average_all":
-                [
-                    "Average_PointingJudgementError_all"
-                ]
+            "Pointing_error_averages":{
+                "Error (every trial)": [f"Avg_PointingJudgement_AbsoluteError_{i}" for i in range(total_pi_trials)
+                ],
+                "Pointing_Error_Average_all":
+                    [
+                        "Average_PointingJudgementError_all"
+                    ]
+            }
         },
         "Map": {
             "MapTotalTime": ["MapTotalTime"],
