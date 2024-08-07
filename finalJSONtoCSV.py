@@ -3,9 +3,11 @@ import csv
 import glob
 import os
 import logging
+import numpy as np
 import pandas as pd
 from datetime import datetime
 from dateutil import parser
+import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -290,6 +292,45 @@ def calculate_pi_averages(df, select_columns, selected_trials=None):
     
     return averages
 
+def calculate_pointing_averages(df, select_columns,total_num_pointing_trials):
+    def get_pointing_trial_indices(input_list):
+        pointing_trials = []
+        for item in input_list:
+            if 'Pointing error.Pointing_trial_' in item:
+                # Extract trial index and ensure it's not including further subcolumns
+                trial_part = item.split('Pointing error.Pointing_trial_')[-1]
+                if '.' not in trial_part:
+                    pointing_trials.append(int(trial_part))  # Convert to integer for proper sorting
+        return sorted(pointing_trials)
+    
+    selected_pointing_trials = get_pointing_trial_indices(select_columns)
+    logger.info(f"Selected_trials_Pointing: {selected_pointing_trials}")
+    
+    def get_unselected_pointing_trials(total_num_pointing_trials, selected_columns):
+        selected_pointing_trials = get_pointing_trial_indices(selected_columns)
+        all_pointing_trials = list(range(total_num_pointing_trials))
+        unselected_pointing_trials = [trial for trial in all_pointing_trials if trial not in selected_pointing_trials]
+        return unselected_pointing_trials
+    
+    unselected_pointing_trials = get_unselected_pointing_trials(total_num_pointing_trials,select_columns)
+    logger.info(f"UnSelected_trials_Pointing: {unselected_pointing_trials}")
+    
+    if selected_pointing_trials:
+        valid_trial_averages = []
+        for trial in selected_pointing_trials:
+            trial_average = df[f'Avg_PointingJudgement_AbsoluteError_{trial}'] 
+            valid_trial_averages.append(trial_average)
+
+        # Calculate the overall average of only the selected trial averages
+        if valid_trial_averages:
+            overall_average = np.mean(valid_trial_averages)
+        else:
+            overall_average = np.nan# Return an empty series if no valid columns
+    else:
+        overall_average = np.nan # Return an empty series if no trials are selected
+
+    return unselected_pointing_trials, overall_average
+
 def JSONtoCSV(json_files, csv_filename, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials):
     logger.info(f"Processing {len(json_files)} JSON files")
     
@@ -423,7 +464,7 @@ def get_summary_columns():
         }
     return column_groups
 
-def clean_column_groups(group, df):
+def clean_column_groups(group, df): 
             if isinstance(group, dict):
                 cleaned = {}
                 for k, v in group.items():

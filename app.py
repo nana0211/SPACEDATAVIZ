@@ -4,7 +4,7 @@ import numpy as np
 import zipfile
 from flask import Flask, request, send_file, render_template, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
-from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns,calculate_pi_averages,clean_column_groups
+from finalJSONtoCSV import get_column_groups,JSONtoCSV,get_summary_columns,calculate_pi_averages,clean_column_groups,calculate_pointing_averages
 from getTrialNumbers import findAllTrials
 
 app = Flask(__name__)
@@ -209,13 +209,19 @@ def upload_file():
 
         column_groups_all_trials= get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
         column_groups_average = get_summary_columns()
-            # Clean the column groups based on the actual DataFrame content
+        # Clean the column groups based on the actual DataFrame content
         cleaned_column_groups_all_trials = clean_column_groups(column_groups_all_trials, df)
         cleaned_column_groups_averages =  clean_column_groups(column_groups_average, df)
+        
         pi_averages = calculate_pi_averages(df,selected_columns)
         for avg_name, avg_values in pi_averages.items():
             df[avg_name] = avg_values
-      
+        
+        unselected_pot,po_averages_all = calculate_pointing_averages(df,selected_columns,num_pot)
+        
+        if po_averages_all != np.nan:
+           df['Average_PointingJudgementError_all'] = po_averages_all
+        
         app.logger.info(f"DataFrame shape: {df.shape}")
         app. logger.info(f"DataFrame columns: {df.columns.tolist()}")
 
@@ -230,9 +236,14 @@ def upload_file():
         app.logger.info(f"Missing columns: {missing_columns}")
         if not existing_columns:
             return jsonify({'error': 'None of the selected columns were found in the data'}), 400
-
+        
+        # This is to remove the averages of pointing judgements if there are not selected. 
+        columns_to_drop = [f'Avg_PointingJudgement_AbsoluteError_{trial}' for trial in unselected_pot]
+        app.logger.info(f"UnSelected_trials_Pointing: {columns_to_drop}")
+        
+        existing_columns = [item for item in existing_columns if item not in columns_to_drop]
         new_df = df[existing_columns]
-
+        
         app.logger.info(f"Final DataFrame shape: {new_df.shape}")
         app.logger.info(f"Final DataFrame columns: {new_df.columns.tolist()}")
         new_df.to_csv(csv_path, index=False)

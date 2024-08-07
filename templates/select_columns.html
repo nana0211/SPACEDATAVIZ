@@ -199,57 +199,67 @@
     });
 }
 
-        function processColumns(columns, parentDiv, depth = 0, path = '') {
-            if (Array.isArray(columns)) {
-                columns.forEach(column => {
-                    const fullPath = path ? `${path}.${column}` : column;
-                    parentDiv.innerHTML += `
-                        <div style="margin-left: ${depth * 20}px;">
-                            <input type="checkbox" id="${fullPath}" name="columns" value="${fullPath}" checked>
-                            <label for="${fullPath}">${column}</label>
-                        </div>
-                    `;
-                });
-            } else if (typeof columns === 'object' && columns !== null) {
-                for (const [subgroup, subcolumns] of Object.entries(columns)) {
-                    const newPath = path ? `${path}.${subgroup}` : subgroup;
+function processColumns(columns, parentDiv, depth = 0, path = '') {
+    if (Array.isArray(columns)) {
+        columns.forEach(column => {
+            const fullPath = path ? `${path}.${column}` : column;
+            parentDiv.innerHTML += `
+                <div style="margin-left: ${depth * 20}px;">
+                    <input type="checkbox" id="${fullPath}" name="columns" value="${fullPath}" checked>
+                    <label for="${fullPath}">${column}</label>
+                </div>
+            `;
+        });
+    } else if (typeof columns === 'object' && columns !== null) {
+        for (const [subgroup, subcolumns] of Object.entries(columns)) {
+            const newPath = path ? `${path}.${subgroup}` : subgroup;
 
-                    if (path === 'PI (for each trial)' && subgroup === 'PI_averages') {
-                        const subgroupDiv = document.createElement('div');
-                        subgroupDiv.style.marginLeft = `${depth * 20}px`;
-                        subgroupDiv.innerHTML = `<h${Math.min(depth + 4, 6)}>${subgroup}</h${Math.min(depth + 4, 6)}>`;
-                        processColumns(subcolumns, subgroupDiv, depth + 1, newPath);
-                        parentDiv.appendChild(subgroupDiv);
-                    } else if (path === 'Pointing error') {
-                        if (subgroup.startsWith('Pointing_trial_')) {
-                            const subgroupDiv = document.createElement('div');
-                            subgroupDiv.style.marginLeft = `${depth * 20}px`;
-                            // Changes start
-                            subgroupDiv.innerHTML = `
-                                <input type="checkbox" id="${newPath}" name="columns" value="${newPath}" checked>
-                                <label for="${newPath}">${subgroup}</label>
-                            `;
-                            parentDiv.appendChild(subgroupDiv);
-                            // Changes end
-                            processColumns(subcolumns, subgroupDiv, depth + 1, newPath);
-                        } else {
-                            const subgroupDiv = document.createElement('div');
-                            subgroupDiv.style.marginLeft = `${depth * 20}px`;
-                            subgroupDiv.innerHTML = `<h${Math.min(depth + 4, 6)}>${subgroup}</h${Math.min(depth + 4, 6)}>`;
-                            processColumns(subcolumns, subgroupDiv, depth + 1, newPath);
-                            parentDiv.appendChild(subgroupDiv);
-                        }
-                    } else {
-                        parentDiv.innerHTML += `
-                            <div style="margin-left: ${depth * 20}px;">
-                                <input type="checkbox" id="${newPath}" name="columns" value="${newPath}" checked>
-                                <label for="${newPath}">${subgroup}</label>
-                            </div>
-                        `;
-                    }
+            if (path === 'PI (for each trial)' && subgroup === 'PI_averages') {
+                const subgroupDiv = document.createElement('div');
+                subgroupDiv.style.marginLeft = `${depth * 20}px`;
+                subgroupDiv.innerHTML = `<h${Math.min(depth + 4, 6)}>${subgroup}</h${Math.min(depth + 4, 6)}>`;
+                processColumns(subcolumns, subgroupDiv, depth + 1, newPath);
+                parentDiv.appendChild(subgroupDiv);
+            } else if (path === 'Pointing error') {
+                if (subgroup.startsWith('Pointing_trial_')) {
+                    const subgroupDiv = document.createElement('div');
+                    subgroupDiv.style.marginLeft = `${depth * 20}px`;
+                    subgroupDiv.innerHTML = `
+                        <input type="checkbox" id="${newPath}" name="columns" value="${newPath}" checked>
+                        <label for="${newPath}">${subgroup}</label>
+                    `;
+                    parentDiv.appendChild(subgroupDiv);
+                    const childrenDiv = document.createElement('div');
+                    childrenDiv.classList.add('subgroup-children');
+                    processColumns(subcolumns, childrenDiv, depth + 1, newPath);
+                    subgroupDiv.appendChild(childrenDiv);
+                    
+                    // Add event listener to parent checkbox
+                    subgroupDiv.querySelector('input[type="checkbox"]').addEventListener('change', function() {
+                        const childCheckboxes = childrenDiv.querySelectorAll('input[type="checkbox"]');
+                        childCheckboxes.forEach(checkbox => {
+                            checkbox.checked = this.checked;
+                        });
+                    });
+                } else {
+                    const subgroupDiv = document.createElement('div');
+                    subgroupDiv.style.marginLeft = `${depth * 20}px`;
+                    subgroupDiv.innerHTML = `<h${Math.min(depth + 4, 6)}>${subgroup}</h${Math.min(depth + 4, 6)}>`;
+                    processColumns(subcolumns, subgroupDiv, depth + 1, newPath);
+                    parentDiv.appendChild(subgroupDiv);
                 }
+            } else {
+                parentDiv.innerHTML += `
+                    <div style="margin-left: ${depth * 20}px;">
+                        <input type="checkbox" id="${newPath}" name="columns" value="${newPath}" checked>
+                        <label for="${newPath}">${subgroup}</label>
+                    </div>
+                `;
             }
         }
+    }
+}
+
 
         fetchColumns(outputOption);
 
