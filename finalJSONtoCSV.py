@@ -74,7 +74,10 @@ class DataExtractor:
         
         overall_average = sum(all_errors) / len(all_errors) if all_errors else 0
         return task_data, overall_average
+    
 
+
+    
 class JSONProcessor:
     def __init__(self, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials):
         self.total_pi_trials = total_pi_trials
@@ -93,7 +96,7 @@ class JSONProcessor:
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {str(e)}")
             return None
-
+    
     def extract_data(self, data):
         extractor = DataExtractor()
         output = []
@@ -111,12 +114,12 @@ class JSONProcessor:
         # Calculate total homing time and total training time
         homing_time_1 = extractor.get_value(data, "Training", "phase5", "Trials", 0, "Data", "totalTime")
         homing_time_2 = extractor.get_value(data, "Training", "phase5", "Trials", 1, "Data", "totalTime")
-        total_homing_time = sum(float(t) for t in [homing_time_1, homing_time_2] if t)
+        total_homing_time = calculate_total_time(homing_time_1,homing_time_2)
         output.append(total_homing_time)
         
         rotation_time = extractor.get_value(data, "Training", "phase1", "totalTime")
         movement_time = extractor.get_value(data, "Training", "phase2", "totalTime")
-        total_training_time = sum(float(t) for t in [rotation_time, movement_time, total_homing_time] if t)
+        total_training_time = calculate_total_time(rotation_time,movement_time,total_homing_time)
         output.append(total_training_time)
 
         # Path Integration data
@@ -330,6 +333,7 @@ def calculate_pointing_averages(df, select_columns,total_num_pointing_trials):
         overall_average = np.nan # Return an empty series if no trials are selected
 
     return unselected_pointing_trials, overall_average
+
 def calculate_pet_averages(df, select_columns, selected_trials=None):
     def get_perspective_error__indices(input_list):
             perspective_trials = []
@@ -349,10 +353,8 @@ def calculate_pet_averages(df, select_columns, selected_trials=None):
         
     if columns:
         df["Avg_PerspectiveErrorMeasure"] = df[columns].mean(axis=1)
-    
-    
-    
-    
+        
+       
 def JSONtoCSV(json_files, csv_filename, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials):
     logger.info(f"Processing {len(json_files)} JSON files")
     
@@ -499,3 +501,16 @@ def clean_column_groups(group, df):
             elif isinstance(group, str):
                 return group if group in df.columns and not df[group].isna().all() and not (df[group] == '').all() else None
             return group
+
+def calculate_total_time(*homing_times):
+        # Convert empty strings to NaN for easier handling
+        homing_times = [np.nan if t == "" else t for t in homing_times]
+
+        # Check if all are NaN
+        if all(pd.isna(t) for t in homing_times):
+            total_homing_time = np.nan
+        else:
+            # Perform the summation, ignoring NaNs
+            total_homing_time = sum(float(t) for t in homing_times if not pd.isna(t))
+        
+        return total_homing_time   
