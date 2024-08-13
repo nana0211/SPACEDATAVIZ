@@ -50,7 +50,13 @@ class DataExtractor:
         
         for landmark in landmarks:
             if landmark in xy_data:
-                map_data.extend([xy_data[landmark].get("X", ""), xy_data[landmark].get("Y", "")])
+                x = xy_data[landmark].get("X", "")
+                y = xy_data[landmark].get("Y", "")
+                # Replace "_" with an empty string
+                x = "" if x == "-" else x
+                y = "" if y == "-" else y
+                map_data.extend([x, y])
+                # map_data.extend([xy_data[landmark].get("X", ""), xy_data[landmark].get("Y", "")])
         
         return map_data
     @staticmethod

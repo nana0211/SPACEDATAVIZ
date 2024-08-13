@@ -111,7 +111,8 @@
         let columnGroups;
         let outputOption = new URLSearchParams(window.location.search).get('output-option');
 
-        const groupDescriptions = {
+        // Detailed and Quick Summary group descriptions
+        const detailedGroupDescriptions = {
             'Player': 'This group includes player-related information such as player ID, age, gender, education level, etc.',
             'Training': 'This group includes several time measures during the training session. For example, RotationTime indicates how long the user rotated during training, and TotalTrainingTime is the sum of all training activities.',
             'PI (for each trial)': 'Path Integration (PI) data includes specific measures like PI TotalTime, PI Distance, PI DistanceRatio, PI FinalAngle, and Corrected PI Angle for each trial. The averages in PI Summaries (e.g., Avg_PI_TotalTime, Avg_PI_Distance) are calculated by averaging these measures across all selected trials. **If no specific PI trials are selected, the averages are calculated using data from all available trials. However, if only certain trials (e.g., PI_trial_0, PI_trial_1, PI_trial_j) are selected, the averages will be computed based on these selected trials only.**',
@@ -121,6 +122,25 @@
             'Perspective taking': 'Perspective taking involves tasks where the user estimates spatial perspectives relative to different objects. The Perspective_Error_Average is computed by averaging the error measures across all selected perspective trials. **If no specific trials are selected, the averages are calculated using all available trials. If only certain perspective trials are selected, the average error is computed based on those specific trials only.**',
             'Overall Measures': 'Overall measures include key timestamps like SPACEStartTime and SPACEEndTime, as well as SPACETotalTime, which represents the total duration of the experiment from start to finish.'
         };
+
+        const quickSummaryGroupDescriptions = {
+            'Player': 'Player-related information, such as the player ID.',
+            'Training': 'This includes the total time spent during the training session (TotalTrainingTime).',
+            'PI (for each trial)': 'Summary averages of key PI measures, including TotalTime, Distance, and Final Angle. **These averages (Avg_PI_TotalTime, Avg_PI_Distance, Avg_PI_FinalAngle) are calculated by averaging the corresponding measures across all PI trials.**',
+            'Pointing error': 'The overall average of pointing judgment errors across all pointing trials. **The average (Average_PointingJudgementError_all) is calculated by averaging the pointing errors across all trials, providing a comprehensive measure of pointing accuracy.**',
+            'Map': 'The degree of association (R2) between the actual map and the user-created map (MapRSq).',
+            'Memory': 'The accuracy percentage of memory tasks (MemoryPercentCorrect).',
+            'Perspective taking': 'The average error in perspective-taking tasks. **The average (Avg_PerspectiveErrorMeasure) is calculated by averaging the error measures across all perspective-taking trials, providing an overall measure of accuracy in perspective-taking tasks.**',
+            'Overall Measures': 'Key timestamps such as SPACEStartTime and SPACEEndTime, and the total time of the entire experiment (SPACETotalTime).'
+        };
+
+        // Select the correct group descriptions based on output option
+        let groupDescriptions;
+        if (outputOption === 'all_trials') {
+            groupDescriptions = detailedGroupDescriptions;
+        } else if (outputOption === 'average') {
+            groupDescriptions = quickSummaryGroupDescriptions;
+        }
 
         function showError(message) {
             loadingElement.classList.add('hidden');

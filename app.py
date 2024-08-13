@@ -215,16 +215,6 @@ def upload_file():
         # Clean the column groups based on the actual DataFrame content
         cleaned_column_groups_all_trials = clean_column_groups(column_groups_all_trials, df)
         cleaned_column_groups_averages =  clean_column_groups(column_groups_average, df)
-        
-        pi_averages = calculate_pi_averages(df,selected_columns)
-        for avg_name, avg_values in pi_averages.items():
-            df[avg_name] = avg_values
-        
-        unselected_pot,po_averages_all = calculate_pointing_averages(df,selected_columns,num_pot)
-        calculate_pet_averages(df,selected_columns)
-        
-        if po_averages_all != np.nan:
-           df['Average_PointingJudgementError_all'] = po_averages_all
 
         expanded_columns = expand_selected_columns(selected_columns, cleaned_column_groups_all_trials, cleaned_column_groups_averages, df, output_option)
 
@@ -239,13 +229,23 @@ def upload_file():
         if not existing_columns:
             return jsonify({'error': 'None of the selected columns were found in the data'}), 400
         
-        # This is to remove the averages of pointing judgements if there are not selected. 
-        columns_to_drop = [f'Avg_PointingJudgement_AbsoluteError_{trial}' for trial in unselected_pot]
-        app.logger.info(f"UnSelected_trials_Pointing: {columns_to_drop}")
-        
-        existing_columns = [item for item in existing_columns if item not in columns_to_drop]
-        new_df = df[existing_columns]
-        
+        if output_option == 'all_trials':
+            pi_averages = calculate_pi_averages(df,selected_columns)
+            for avg_name, avg_values in pi_averages.items():
+                df[avg_name] = avg_values
+            
+            unselected_pot,po_averages_all = calculate_pointing_averages(df,selected_columns,num_pot)
+            calculate_pet_averages(df,selected_columns)
+            
+            if po_averages_all != np.nan:
+                df['Average_PointingJudgementError_all'] = po_averages_all
+                # This is to remove the averages of pointing judgements if there are not selected. 
+                columns_to_drop = [f'Avg_PointingJudgement_AbsoluteError_{trial}' for trial in unselected_pot]
+                app.logger.info(f"UnSelected_trials_Pointing: {columns_to_drop}")
+            existing_columns = [item for item in existing_columns if item not in columns_to_drop]
+            new_df = df[existing_columns]
+        else:
+            new_df = df[expanded_columns]
         app.logger.info(f"Final DataFrame shape: {new_df.shape}")
         app.logger.info(f"Final DataFrame columns: {new_df.columns.tolist()}")
         new_df.to_csv(csv_path, index=False)
