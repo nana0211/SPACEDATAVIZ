@@ -397,7 +397,7 @@ def get_column_groups(df, total_pi_trials, total_pointing_judgements, total_poin
             "TotalHomingTime", 'TotalTrainingTime'
         ],
         "PI (for each trial)": {
-            "PI_averages": {
+            "PI Summaries": {
                 "PI TotalTime":["Avg_PI_TotalTime"],
                 "PI Distance": ["Avg_PI_Distance"],
                 "PI DistanceRatio":["Avg_PI_DistRatio"],
@@ -473,7 +473,7 @@ def get_summary_columns():
             'TotalTrainingTime'
         ],
         "PI (for each trial)": {
-            "PI_averages": [
+            "PI Summaries": [
                 "Avg_PI_TotalTime",
                 "Avg_PI_Distance",
                 "Avg_PI_FinalAngle",

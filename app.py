@@ -147,9 +147,7 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
             if len(parts) == 1 and parts[0] == 'Player_ID':
                 expanded_columns.append(parts[0])
             elif 'Pointing_trial_' in col:
-                print(f"Debug: Found Pointing_trial_ in {col}")
                 trial_num = col.split('Pointing_trial_')[-1].split('.')[0]
-                print(f"Debug: Processing Pointing_trial_{trial_num}")
                 expanded_columns.extend([clean_column_name(c) for c in selected_columns if f'PointingJudgement_AbsoluteError_{trial_num}_' in c])
             else:
                 col_dict = process_column_path(col, column_groups_all_trials)

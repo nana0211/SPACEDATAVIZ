@@ -180,8 +180,13 @@
                 if (group === 'PI (for each trial)' || group === 'Perspective taking') {
                     // Special handling for PI trials to ensure correct order
                     const sortedKeys = Object.keys(groupColumns).sort((a, b) => {
-                        if (a === 'PI_averages') return -1;
-                        if (b === 'PI_averages') return 1;
+                        if (group === 'PI (for each trial)') {
+                            if (a === 'PI Summaries') return -1;
+                            if (b === 'PI Summaries') return 1;
+                        } else if (group === 'Perspective taking') {
+                            if (a === 'Pespective summaries') return -1;  // Prioritize "Pespective summaries"
+                            if (b === 'Pespective summaries') return 1;
+                        }
                         const aNum = parseInt(a.split('_').pop());
                         const bNum = parseInt(b.split('_').pop());
                         return aNum - bNum;
@@ -214,7 +219,7 @@ function processColumns(columns, parentDiv, depth = 0, path = '') {
         for (const [subgroup, subcolumns] of Object.entries(columns)) {
             const newPath = path ? `${path}.${subgroup}` : subgroup;
 
-            if ((path === 'PI (for each trial)' && subgroup === 'PI_averages') || (path === 'Perspective taking' && subgroup === 'Pespective summaries')) {
+            if ((path === 'Perspective taking' && subgroup === 'Pespective summaries')||(path === 'PI (for each trial)' && subgroup === 'PI Summaries') ) {
                 const subgroupDiv = document.createElement('div');
                 subgroupDiv.style.marginLeft = `${depth * 20}px`;
                 subgroupDiv.innerHTML = `<h${Math.min(depth + 4, 6)}>${subgroup}</h${Math.min(depth + 4, 6)}>`;
