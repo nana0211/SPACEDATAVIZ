@@ -214,7 +214,7 @@ function processColumns(columns, parentDiv, depth = 0, path = '') {
         for (const [subgroup, subcolumns] of Object.entries(columns)) {
             const newPath = path ? `${path}.${subgroup}` : subgroup;
 
-            if (path === 'PI (for each trial)' && subgroup === 'PI_averages') {
+            if ((path === 'PI (for each trial)' && subgroup === 'PI_averages') || (path === 'Perspective taking' && subgroup === 'Pespective summaries')) {
                 const subgroupDiv = document.createElement('div');
                 subgroupDiv.style.marginLeft = `${depth * 20}px`;
                 subgroupDiv.innerHTML = `<h${Math.min(depth + 4, 6)}>${subgroup}</h${Math.min(depth + 4, 6)}>`;

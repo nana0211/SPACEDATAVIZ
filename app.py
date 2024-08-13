@@ -131,17 +131,26 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
             else:
                 return None
         return current_dict
-
+    
     def expand_pi_trial(trial_num, df_columns):
         pi_columns = [c for c in df_columns if c.startswith(f'PI_') and c.split('_')[2] == trial_num]
         order = ['TotalTime', 'Distance', 'DistRatio', 'FinalAngle', 'Angle', 'Corrected_PI_Angle']
         return sorted(pi_columns, key=lambda x: order.index(x.split('_')[1]) if x.split('_')[1] in order else len(order))
+    
+    def clean_column_name(col):
+        # Extract the column name relevant to the DataFrame
+        return col.split('.')[-1]
 
     if output_option == 'all_trials':
         for col in selected_columns:
             parts = col.split('.')
             if len(parts) == 1 and parts[0] == 'Player_ID':
                 expanded_columns.append(parts[0])
+            elif 'Pointing_trial_' in col:
+                print(f"Debug: Found Pointing_trial_ in {col}")
+                trial_num = col.split('Pointing_trial_')[-1].split('.')[0]
+                print(f"Debug: Processing Pointing_trial_{trial_num}")
+                expanded_columns.extend([clean_column_name(c) for c in selected_columns if f'PointingJudgement_AbsoluteError_{trial_num}_' in c])
             else:
                 col_dict = process_column_path(col, column_groups_all_trials)
                 if col_dict:
@@ -149,14 +158,11 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
                         expanded_columns.extend(col_dict)
                     else:
                         expanded_columns.append(col_dict)
-                elif col.startswith('PI_trial_'):
-                    trial_num = col.split('_')[-1]
+                elif 'PI_trial_' in col:
+                    trial_num = col.split('PI_trial_')[-1]
                     expanded_columns.extend(expand_pi_trial(trial_num, df.columns))
-                elif col.startswith('Pointing_trial_'):
-                    trial_num = col.split('_')[-1]
-                    expanded_columns.extend(sorted([c for c in df.columns if c.startswith(f'PointingJudgement_AbsoluteError_{trial_num}_')]))
-                elif col.startswith('Perspective_trial_'):
-                    trial_num = col.split('_')[-1]
+                elif 'Perspective_trial_' in col:
+                    trial_num = col.split('Perspective_trial_')[-1]
                     expanded_columns.extend(sorted([c for c in df.columns if c.startswith(f'Perspective') and f'_{trial_num}' in c]))
 
     elif output_option == 'average':
@@ -171,9 +177,8 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
                         expanded_columns.extend(col_dict)
                     else:
                         expanded_columns.append(col_dict)
-        
-        # For 'average' option, we don't need to sort the columns as they should already be in the correct order
 
+    expanded_columns = list(dict.fromkeys(expanded_columns))  # Remove duplicates
     return expanded_columns
 
 @app.route('/upload', methods=['POST'])
@@ -207,7 +212,7 @@ def upload_file():
         app.logger.info(f"DataFrame shape: {df.shape}")
         app.logger.info(f"DataFrame columns: {df.columns.tolist()}")
 
-        column_groups_all_trials= get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
+        column_groups_all_trials = get_column_groups(df, num_pi, num_pj, num_pot, num_pet)
         column_groups_average = get_summary_columns()
         # Clean the column groups based on the actual DataFrame content
         cleaned_column_groups_all_trials = clean_column_groups(column_groups_all_trials, df)
@@ -222,13 +227,11 @@ def upload_file():
         
         if po_averages_all != np.nan:
            df['Average_PointingJudgementError_all'] = po_averages_all
-        
-        app.logger.info(f"DataFrame shape: {df.shape}")
-        app. logger.info(f"DataFrame columns: {df.columns.tolist()}")
 
         expanded_columns = expand_selected_columns(selected_columns, cleaned_column_groups_all_trials, cleaned_column_groups_averages, df, output_option)
 
         app.logger.info(f"Expanded columns: {expanded_columns}")
+        # revise here 
         existing_columns = list(dict.fromkeys([col for col in expanded_columns if col in df.columns]))
         app.logger.info(f"Existing columns: {existing_columns}")
 
