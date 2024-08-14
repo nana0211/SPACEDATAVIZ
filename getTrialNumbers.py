@@ -54,31 +54,8 @@ def process_input(file_path):
         raise ValueError("Input file must be either a .zip or .json file")
     
 def findMaximumTrial(pattern,file_path):
-    df = process_input(file_path)
+    df = process_single_json(file_path)
     csv_header = df.columns
-
-    # Initialize variables
-    max_j = 0
-    min_j = 0
-    matching_columns = []
-
-    # Find matching columns and extract j values
-    for col in csv_header:
-        match = re.match(pattern, col)
-        if match:
-            j = int(match.group(1))
-            matching_columns.append(col)
-            max_j = max(max_j, j)
-            min_j = min(min_j, j)
-    # Print the results
-    if matching_columns:
-        print(f"Maximum j value: {max_j}" + " of" + pattern)
-        print(f"Minimum j value: {min_j}"+ " of" + pattern)
-    return max_j
-
-def findMaximumTrial_df(pattern,df):
-    csv_header = df.columns
-
     # Initialize variables
     max_j = 0
     min_j = 0
@@ -99,19 +76,34 @@ def findMaximumTrial_df(pattern,df):
     return max_j
 
 def findAllTrials(file_path):
-    num_pi = findMaximumTrial(PATTERN_PATH_INTEGRATION,file_path)
-    num_pj = findMaximumTrial(PATTERN_POINTING_JUDGEMENT,file_path)
-    num_pot = findMaximumTrial(PATTERN_POINTING_TASK,file_path)
-    num_pet = findMaximumTrial(PATTERN_PERSPECTIVE_TAKING,file_path)
-    print("Debug!!!!!usage=========================" + " " +  str(num_pi) + " " +  str(num_pj) + " " +  str(num_pot) + " " +  str(num_pet))
-    return num_pi+1, num_pj+1, num_pot+1, num_pet+1
+    if len(file_path)>1:
+        max_values = {
+            "num_pi": 0,
+            "num_pj": 0,
+            "num_pot": 0,
+            "num_pet": 0
+        }
+        for file in file_path:
+            print("Currently processing:" + file)
+              # Skip unwanted files
+            if "__MACOSX" in file or file.startswith("._"):
+                print(f"Skipping unwanted file: {file}")
+                continue
 
-def findAllTrials_df(df):
-    num_pi = findMaximumTrial_df(PATTERN_PATH_INTEGRATION,df)
-    num_pj = findMaximumTrial_df(PATTERN_POINTING_JUDGEMENT,df)
-    num_pot = findMaximumTrial_df(PATTERN_POINTING_TASK,df)
-    num_pet = findMaximumTrial_df(PATTERN_PERSPECTIVE_TAKING,df)
-    print("Debug!!!!!usage=========================" + " " +  str(num_pi) + " " +  str(num_pj) + " " +  str(num_pot) + " " +  str(num_pet))
+            max_values["num_pi"] = max(max_values["num_pi"], findMaximumTrial(PATTERN_PATH_INTEGRATION,file))
+            max_values["num_pj"] = max(max_values["num_pj"], findMaximumTrial(PATTERN_POINTING_JUDGEMENT,file))
+            max_values["num_pot"] = max(max_values["num_pot"], findMaximumTrial(PATTERN_POINTING_TASK,file))
+            max_values["num_pet"] = max(max_values["num_pet"], findMaximumTrial(PATTERN_PERSPECTIVE_TAKING,file))
+        num_pi = max_values["num_pi"]
+        num_pj = max_values["num_pj"]
+        num_pot = max_values["num_pot"]
+        num_pet = max_values["num_pet"]
+    else:
+        num_pi = findMaximumTrial(PATTERN_PATH_INTEGRATION,file_path[0])
+        num_pj = findMaximumTrial(PATTERN_POINTING_JUDGEMENT,file_path[0])
+        num_pot = findMaximumTrial(PATTERN_POINTING_TASK,file_path[0])
+        num_pet = findMaximumTrial(PATTERN_PERSPECTIVE_TAKING,file_path[0])
+        print("Debug!!!!!usage=========================" + " " +  str(num_pi) + " " +  str(num_pj) + " " +  str(num_pot) + " " +  str(num_pet))
     return num_pi+1, num_pj+1, num_pot+1, num_pet+1
 
 def findEstimatedLandmarks(path_file):

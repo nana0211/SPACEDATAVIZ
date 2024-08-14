@@ -77,7 +77,7 @@ def get_columns():
         else:
             json_files = [file_path]
 
-        num_pi, num_pj, num_pot, num_pet = findAllTrials(json_files[0])
+        num_pi, num_pj, num_pot, num_pet = findAllTrials(json_files)
         df = JSONtoCSV(json_files, os.path.basename(file_path), num_pi, num_pj, num_pot, num_pet)
 
         if output_option == 'average':
@@ -204,7 +204,7 @@ def upload_file():
         app.logger.info(f"Processing files: {json_files}")
         app.logger.info(f"Selected columns: {selected_columns}")
 
-        num_pi, num_pj, num_pot, num_pet = findAllTrials(json_files[0])
+        num_pi, num_pj, num_pot, num_pet = findAllTrials(json_files)
         df = JSONtoCSV(json_files, os.path.basename(file_path), num_pi, num_pj, num_pot, num_pet)
 
         app.logger.info(f"DataFrame shape: {df.shape}")
