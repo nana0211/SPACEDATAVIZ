@@ -237,12 +237,10 @@ def upload_file():
             unselected_pot,po_averages_all = calculate_pointing_averages(df,selected_columns,num_pot)
             calculate_pet_averages(df,selected_columns)
             
-            if po_averages_all != np.nan:
-                df['Average_PointingJudgementError_all'] = po_averages_all
-                # This is to remove the averages of pointing judgements if there are not selected. 
-                columns_to_drop = [f'Avg_PointingJudgement_AbsoluteError_{trial}' for trial in unselected_pot]
-                app.logger.info(f"UnSelected_trials_Pointing: {columns_to_drop}")
-            existing_columns = [item for item in existing_columns if item not in columns_to_drop]
+            # Drop unselected averages if needed
+            columns_to_drop = [f'Avg_PointingJudgement_AbsoluteError_{trial}' for trial in unselected_pot]
+            app.logger.info(f"UnSelected_trials_Pointing: {columns_to_drop}")
+            existing_columns = [item for item in df.columns if item not in columns_to_drop]
             new_df = df[existing_columns]
         else:
             new_df = df[expanded_columns]

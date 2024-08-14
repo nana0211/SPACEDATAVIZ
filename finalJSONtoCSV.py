@@ -297,7 +297,7 @@ def calculate_pi_averages(df, select_columns, selected_trials=None):
             columns = [col for col in df.columns if col.startswith(f"PI_{metric}_")]
         
         if columns:
-            averages[f"Avg_PI_{metric}"] = df[columns].mean(axis=1)
+            averages[f"Avg_PI_{metric}"] = df[columns].apply(lambda x: pd.to_numeric(x, errors='coerce')).mean(axis=1)
     
     return averages
 
@@ -324,33 +324,53 @@ def calculate_pointing_averages(df, select_columns, total_num_pointing_trials):
     unselected_pointing_trials = get_unselected_pointing_trials(total_num_pointing_trials, select_columns)
     logger.info(f"UnSelected_trials_Pointing: {unselected_pointing_trials}")
 
+    # valid_trial_averages = []
+    # if not selected_pointing_trials:
+    #     selected_pointing_trials = list(range(total_num_pointing_trials))
+    #     logger.info("No pointing trials selected. Defaulting to all trials and sub-pointing judgment trials.")
+
+    # for trial in selected_pointing_trials:
+    #     # Find all sub-trial columns related to the specific trial
+    #     sub_trial_columns = [col.split('.')[-1] for col in select_columns if f'PointingJudgement_AbsoluteError_{trial}_Trial_' in col.split('.')[-1]]
+
+    #     if sub_trial_columns:
+    #         # print(f"Processing Pointing Judgement Sub-Trials for Trial {trial}: {sub_trial_columns}")
+    #         # Calculate the mean across the selected sub-trials for this trial
+    #         trial_average = df[sub_trial_columns].apply(lambda x: pd.to_numeric(x, errors='coerce')).mean(axis=1)
+            
+    #         # Update the DataFrame with the calculated average for this trial
+    #         df[f'Avg_PointingJudgement_AbsoluteError_{trial}'] = trial_average
+    #         # print(f"Updated df with Avg_PointingJudgement_AbsoluteError_{trial} based on columns: {sub_trial_columns}")
+            
+    #         # Add this average to the list of valid trial averages
+    #         valid_trial_averages.append(trial_average.mean())
+
+    # if valid_trial_averages:
+    #     overall_average = np.mean(valid_trial_averages)
+    # else:
+    #     overall_average = np.nan  # Return NaN if no valid columns are found
     valid_trial_averages = []
+    # Determine which trials to include in the overall average
     if not selected_pointing_trials:
-        selected_pointing_trials = list(range(total_num_pointing_trials))
-        logger.info("No pointing trials selected. Defaulting to all trials and sub-pointing judgment trials.")
-
+        # No trials selected, use all trials
+        selected_pointing_trials = range(total_num_pointing_trials)
+        logger.info("No pointing trials selected. Defaulting to all trials.")
+    
+    # Calculate the overall average based on selected trials
     for trial in selected_pointing_trials:
-        # Find all sub-trial columns related to the specific trial
-        sub_trial_columns = [col.split('.')[-1] for col in select_columns if f'PointingJudgement_AbsoluteError_{trial}_Trial_' in col.split('.')[-1]]
-
-        if sub_trial_columns:
-            # print(f"Processing Pointing Judgement Sub-Trials for Trial {trial}: {sub_trial_columns}")
-            # Calculate the mean across the selected sub-trials for this trial
-            trial_average = df[sub_trial_columns].mean(axis=1)
-            
-            # Update the DataFrame with the calculated average for this trial
-            df[f'Avg_PointingJudgement_AbsoluteError_{trial}'] = trial_average
-            # print(f"Updated df with Avg_PointingJudgement_AbsoluteError_{trial} based on columns: {sub_trial_columns}")
-            
-            # Add this average to the list of valid trial averages
-            valid_trial_averages.append(trial_average.mean())
+        if f'Avg_PointingJudgement_AbsoluteError_{trial}' in df.columns:
+            trial_avg_column = df[f'Avg_PointingJudgement_AbsoluteError_{trial}']
+            if not trial_avg_column.isna().all():
+                valid_trial_averages.append(trial_avg_column)
 
     if valid_trial_averages:
-        overall_average = np.mean(valid_trial_averages)
+        # Calculate the mean across all valid trial averages for each row
+        df['Average_PointingJudgementError_all'] = pd.concat(valid_trial_averages, axis=1).apply(lambda x: pd.to_numeric(x, errors='coerce')).mean(axis=1)
     else:
-        overall_average = np.nan  # Return NaN if no valid columns are found
+        df['Average_PointingJudgementError_all'] = np.nan
 
-    return unselected_pointing_trials, overall_average
+
+    return unselected_pointing_trials, df['Average_PointingJudgementError_all']
 
 def calculate_pet_averages(df, select_columns, selected_trials=None):
     def get_perspective_error__indices(input_list):
@@ -370,7 +390,7 @@ def calculate_pet_averages(df, select_columns, selected_trials=None):
         columns = [col for col in df.columns if col.startswith(f"PerspectiveErrorMeasure_")]
         
     if columns:
-        df["Avg_PerspectiveErrorMeasure"] = df[columns].mean(axis=1)
+        df["Avg_PerspectiveErrorMeasure"] = df[columns].apply(lambda x: pd.to_numeric(x, errors='coerce')).mean(axis=1)
         
        
 def JSONtoCSV(json_files, csv_filename, total_pi_trials, total_pointing_judgements, total_pointing_tasks, total_pt_trials):
@@ -385,6 +405,7 @@ def JSONtoCSV(json_files, csv_filename, total_pi_trials, total_pointing_judgemen
     df = pd.DataFrame(data, columns=headers)
     logger.info(f"DataFrame shape: {df.shape}")
     logger.info(f"DataFrame columns: {df.columns.tolist()}")
+
     
     return df
 
