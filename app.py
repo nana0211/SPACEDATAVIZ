@@ -226,6 +226,7 @@ def upload_file():
         # Identify missing columns
         missing_columns = [col for col in expanded_columns if col not in df.columns]
         app.logger.info(f"Missing columns: {missing_columns}")
+        
         if not existing_columns:
             return jsonify({'error': 'None of the selected columns were found in the data'}), 400
         
@@ -240,7 +241,7 @@ def upload_file():
             # Drop unselected averages if needed
             columns_to_drop = [f'Avg_PointingJudgement_AbsoluteError_{trial}' for trial in unselected_pot]
             app.logger.info(f"UnSelected_trials_Pointing: {columns_to_drop}")
-            existing_columns = [item for item in df.columns if item not in columns_to_drop]
+            existing_columns = [item for item in existing_columns if item not in columns_to_drop]
             new_df = df[existing_columns]
         else:
             new_df = df[expanded_columns]
