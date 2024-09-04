@@ -146,6 +146,8 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
             parts = col.split('.')
             if len(parts) == 1 and parts[0] == 'Player_ID':
                 expanded_columns.append(parts[0])
+            elif len(parts) == 2 and (parts[0] == 'Overall Measures' or parts[0] == 'Training'):
+                expanded_columns.append(parts[1])
             elif 'Pointing_trial_' in col:
                 trial_num = col.split('Pointing_trial_')[-1].split('.')[0]
                 expanded_columns.extend([clean_column_name(c) for c in selected_columns if f'PointingJudgement_AbsoluteError_{trial_num}_' in c])
@@ -168,6 +170,8 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
             parts = col.split('.')
             if len(parts) == 1 and parts[0] == 'Player_ID':
                 expanded_columns.append(parts[0])
+            elif len(parts) == 2 and (parts[0] == 'Overall Measures' or parts[0] == 'Training'):
+                expanded_columns.append(parts[1])
             else:
                 col_dict = process_column_path(col, column_groups_average)
                 if col_dict:
