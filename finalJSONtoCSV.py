@@ -423,6 +423,13 @@ def calculate_pi_averages(df, select_columns, selected_trials=None):
     
     return averages
 
+import pandas as pd
+import numpy as np
+import logging
+
+# Assuming logger is already configured
+logger = logging.getLogger()
+
 def calculate_pointing_averages(df, select_columns, total_num_pointing_trials):
     def get_pointing_trial_indices(input_list):
         pointing_trials = []
@@ -446,13 +453,16 @@ def calculate_pointing_averages(df, select_columns, total_num_pointing_trials):
     unselected_pointing_trials = get_unselected_pointing_trials(total_num_pointing_trials, select_columns)
     logger.info(f"UnSelected_trials_Pointing: {unselected_pointing_trials}")
 
+    # Calculate new averages for selected trials
+    for trial in selected_pointing_trials:
+        selected_errors = [col for col in select_columns if f'PointingJudgement_AbsoluteError_{trial}_Trial_' in col]
+        
+        if selected_errors:
+            valid_columns = [col.split('.')[-1] for col in selected_errors if col.split('.')[-1] in df.columns]
+            # Calculate the average for the selected errors for the trial
+            df[f'Avg_PointingJudgement_AbsoluteError_{trial}'] = df[valid_columns].apply(lambda x: pd.to_numeric(x, errors='coerce')).mean(axis=1)
+
     valid_trial_averages = []
-    # Determine which trials to include in the overall average
-    if not selected_pointing_trials:
-        # No trials selected, use all trials
-        selected_pointing_trials = range(total_num_pointing_trials)
-        logger.info("No pointing trials selected. Defaulting to all trials.")
-    
     # Calculate the overall average based on selected trials
     for trial in selected_pointing_trials:
         if f'Avg_PointingJudgement_AbsoluteError_{trial}' in df.columns:
@@ -465,7 +475,6 @@ def calculate_pointing_averages(df, select_columns, total_num_pointing_trials):
         df['Average_PointingJudgementError_all'] = pd.concat(valid_trial_averages, axis=1).apply(lambda x: pd.to_numeric(x, errors='coerce')).mean(axis=1)
     else:
         df['Average_PointingJudgementError_all'] = np.nan
-
 
     return unselected_pointing_trials, df['Average_PointingJudgementError_all']
 
@@ -597,7 +606,7 @@ def get_column_groups(df, total_pi_trials, total_pointing_judgements, total_poin
     for i in range(total_pi_trials):
         pi_cols = [
             f'PI_TotalTime_{i}', f'PI_Distance_{i}', f'PI_DistRatio_{i}',
-            f'PI_FinalAngle_{i}', f'Corrected_PI_Angle_{i}'
+            f'PI_FinalAngle_{i}', f'PI_Corrected_PI_Angle_{i}'
         ]
         if any(col in df.columns for col in pi_cols):
             if isinstance(column_groups["PI (for each trial)"], dict):
@@ -647,7 +656,7 @@ def get_summary_columns():
                 'MemoryPercentCorrect'
         ],
         "Perspective taking": {
-            "Perspective Error Average": [
+            "Pespective summaries": [
                 "Avg_PerspectiveErrorMeasure"
             ]
         },

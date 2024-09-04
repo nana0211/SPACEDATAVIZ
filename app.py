@@ -167,11 +167,17 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
 
     elif output_option == 'average':
         for col in selected_columns:
-            parts = col.split('.')
-            if len(parts) == 1 and parts[0] == 'Player_ID':
-                expanded_columns.append(parts[0])
-            elif len(parts) == 2 and (parts[0] == 'Overall Measures' or parts[0] == 'Training'):
-                expanded_columns.append(parts[1])
+            parts = col.split('.') 
+            # Case 2: Two parts
+            if len(parts) == 2:
+                if parts[0] in ['Player','Overall Measures', 'Training','Map']:
+                    expanded_columns.append(parts[1])
+            
+            # Case 3: 'PI (for each trial)' with more detailed parts
+            elif len(parts) == 3:
+                if parts[0] in ['PI (for each trial)','Pointing error','Perspective taking']:
+                # Append the third part for 'PI (for each trial)' cases
+                   expanded_columns.append(parts[2])
             else:
                 col_dict = process_column_path(col, column_groups_average)
                 if col_dict:
@@ -179,6 +185,7 @@ def expand_selected_columns(selected_columns, column_groups_all_trials, column_g
                         expanded_columns.extend(col_dict)
                     else:
                         expanded_columns.append(col_dict)
+        
 
     expanded_columns = list(dict.fromkeys(expanded_columns))  # Remove duplicates
     return expanded_columns

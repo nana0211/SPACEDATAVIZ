@@ -1,2 +1,2 @@
-Player_ID,RotationTime,MovementTime,Avg_PerspectiveErrorMeasure,Overall_PerspectiveTotalTime,PerspectiveErrorMeasure_0,PerspectiveErrorMeasure_1,PerspectiveErrorMeasure_2,PerspectiveErrorMeasure_3,PerspectiveErrorMeasure_4,PerspectiveErrorMeasure_5,PerspectiveErrorMeasure_6,SPACEStartTime,SPACETotalTime
-BIOSPACE_037(2),33.1054573,72.9725647,49.4501036855413,404.584656,1.52587891e-05,153.825134,37.2085571,13.0991821,1.34477234,107.263885,33.40918,2023-10-11T14:16:56.2204940+08:00,970.204326
+Player_ID,Avg_PI_TotalTime,Avg_PI_FinalAngle,Average_PointingJudgementError_all,Avg_PerspectiveErrorMeasure,SPACEStartTime,SPACEEndTime,SPACETotalTime
+P3-M,45.17816246666666,21.43353528333333,17.379944209166666,7.8596390411658685,2024-06-15T10:47:01.5726870+10:00,2024-06-15T11:10:13.7435600+10:00,1392.170873
